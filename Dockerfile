@@ -1,0 +1,5 @@
+FROM alpine:3
+ARG TARGETARCH
+COPY out/$TARGETARCH/api1 /app/api1
+WORKDIR /app
+CMD ./api1

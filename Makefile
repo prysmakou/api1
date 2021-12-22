@@ -5,7 +5,7 @@ BINARY_NAME=api1
 IMAGE_NAME=api1
 VERSION?=0.0.1
 SERVICE_PORT?=8080
-DOCKER_REGISTRY?=public.ecr.aws/p3i6g7q5/#if set it should finished by /
+DOCKER_REGISTRY?=
 EXPORT_RESULT?=false # for CI please set EXPORT_RESULT to true
 
 GREEN  := $(shell tput -Txterm setaf 2)
@@ -20,9 +20,9 @@ all: help
 
 ## Build:
 build: ## Build your project and put the output binary in out/bin/
-	mkdir -p out/amd64/
+	# mkdir -p out/amd64/
 	mkdir -p out/arm64/
-	env GOOS=linux GOARCH=amd64 $(GOCMD) build -o out/amd64/$(BINARY_NAME) .
+	# env GOOS=linux GOARCH=amd64 $(GOCMD) build -o out/amd64/$(BINARY_NAME) .
 	env GOOS=linux GOARCH=arm64 $(GOCMD) build -o out/arm64/$(BINARY_NAME) .
 
 clean: ## Remove build related file
@@ -32,7 +32,7 @@ clean: ## Remove build related file
 # 	$(eval PACKAGE_NAME=$(shell head -n 1 go.mod | cut -d ' ' -f2))
 # 	docker run -it --rm -w -v $(shell pwd):/go/src/$(PACKAGE_NAME) -p $(SERVICE_PORT):$(SERVICE_PORT) cosmtrek/air
 run: ## Run the code with docker
-	docker run -it --rm -p $(SERVICE_PORT):$(SERVICE_PORT) ${IMAGE_NAME} ./${BINARY_NAME}
+	docker run -it --rm --name api1 -p $(SERVICE_PORT):$(SERVICE_PORT) ${DOCKER_REGISTRY}${IMAGE_NAME}
 
 # ## Test:
 # test: ## Run the tests of the project
@@ -79,11 +79,9 @@ docker-build-amd: ## Use the dockerfile to build the container
 	docker buildx build --platform=linux/amd64 -t ${BINARY_NAME} .
 
 docker-build-arm: ## Use the dockerfile to build the container
-	docker buildx build --platform=linux/arm64 -t ${BINARY_NAME} .
+	docker buildx build --no-cache --platform=linux/arm64 -t ${DOCKER_REGISTRY}${BINARY_NAME}:latest .
 
 docker-release: ## Release the container with tag latest and version
-	docker tag ${IMAGE_NAME}:latest ${DOCKER_REGISTRY}${IMAGE_NAME}:latest
-	# Push the docker images
 	aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/p3i6g7q5
 	docker push $(DOCKER_REGISTRY)$(BINARY_NAME):latest
 	# docker push $(DOCKER_REGISTRY)$(BINARY_NAME):$(VERSION)
